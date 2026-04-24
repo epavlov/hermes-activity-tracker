@@ -160,16 +160,18 @@ There is no inbound webhook — replies are handled when the user types them int
 
 ## Telegram message format
 
-`scripts/notify.py` produces (Markdown V2 escaping handled by the script). Multi-day activities render as ranges and annotate any adjacent company holiday:
+`scripts/notify.py` produces (Markdown V2 escaping handled by the script). The top section surfaces everything already on the books whose date (or date range) is still in the future — it is kept small but visually separated from the suggestions below by a heavy horizontal rule so the user can't miss what's already committed. Multi-day activities render as ranges and annotate any adjacent company holiday:
 
 ```
 📅 *Activity Date Suggestions*
 
-🗓️ *Scheduled next 14 days:*
+✅ *Upcoming — already scheduled:*
 • Morning Yoga — Tue, May 26
 • Nashville trip — Sat, May 23 → Mon, May 25 (Memorial Day)
 
-📝 *Pending — reply with the number to accept:*
+━━━━━━━━━━━━━━━━━━
+
+📝 *Suggestions — reply with the number to accept:*
 
 1. *Learn Spanish vocabulary* — Mon, Apr 27
    learning · indoor · 60-90 min · morning
@@ -183,10 +185,29 @@ There is no inbound webhook — replies are handled when the user types them int
 Reply: number to accept · date to override · all · skip · history
 ```
 
+The *Upcoming* section is omitted entirely when no scheduled activity is still in the future; likewise the divider is only rendered when both sections are present. A multi-day range stays listed until its last day has passed (so a trip that started yesterday is still "upcoming" until it ends).
+
 ## Troubleshooting
 
 - **`analyze.py` exits with KeyError** — a legacy entry is missing a required field. Run `python3 scripts/analyze.py --migrate` to fill defaults.
-- **Telegram 401 Unauthorized** — `TELEGRAM_BOT_TOKEN` not exported into the cron environment. Cron does not source `~/.zshrc`; set the vars directly in the crontab or via a wrapper script.
+- **Telegram 401 Unauthorized** — `TELEGRAM_BOT_TOKEN` not exported into the cron environment. Cron does **not** source `~/.zshrc`, `~/.bashrc`, or any shell profile — it starts a minimal environment. Set the vars directly in the crontab:
+  ```
+  0 7,19 * * * TELEGRAM_BOT_TOKEN=123456:ABC... TELEGRAM_CHAT_ID=12345678 cd ~/.hermes/skills/productivity/activity-tracker && python3 scripts/analyze.py && python3 scripts/notify.py
+  ```
+  Or create a wrapper script:
+  ```bash
+  #!/usr/bin/env bash
+  set -euo pipefail
+  export TELEGRAM_BOT_TOKEN=$(grep '^TELEGRAM_BOT_TOKEN=' ~/.hermes/.env | head -1 | sed 's/^TELEGRAM_BOT_TOKEN=//')
+  export TELEGRAM_CHAT_ID=$(grep '^TELEGRAM_CHAT_ID=' ~/.hermes/.env | head -1 | sed 's/^TELEGRAM_CHAT_ID=//')
+  exec python3 -u /Users/admin/.hermes/skills/productivity/activity-tracker/scripts/notify.py
+  ```
+  Save as `~/.hermes/skills/productivity/activity-tracker/scripts/notify-wrapper.sh`, `chmod +x` it, and call `./scripts/notify-wrapper.sh` from the cron.
+- **Telegram credentials not in env** — fallback: the cron session won't have `TELEGRAM_BOT_TOKEN` set. Extract the real token from `~/.hermes/.env` (line starting with `TELEGRAM_BOT_TOKEN=`). The file display may show the token as masked (e.g. `***`), but the full UTF-8 bytes are stored:
+  ```bash
+  grep '^TELEGRAM_BOT_TOKEN=' ~/.hermes/.env | head -1 | sed 's/^TELEGRAM_BOT_TOKEN=//'
+  ```
+  Then pass it to the subprocess env: `{**os.environ, "TELEGRAM_BOT_TOKEN": token}`.
 - **Weather shows all zeros / empty** — wttr.in rate limit. The weather module caches to `/tmp/weather_<slug>.json` for 3h; delete the cache and retry. If still empty, `lang_ru` was probably the culprit — the script already handles missing/empty, but double-check you haven't edited it.
 - **Cron didn't fire** — verify with `cronjob action=list`. On macOS, check `Console.app` → `cron` for permission prompts. For delivery-specific failures see the `telegram-troubleshoot` skill.
 - **`chanceofrain` parse error** — wttr.in returns strings; the parser calls `int()` on them. If you see a `ValueError`, wttr.in changed its schema — add a `try/except` around the coercion and log the offending value.

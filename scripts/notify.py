@@ -112,9 +112,8 @@ def _date_range_label(start_iso: str, span: int) -> tuple[str, str | None]:
 
 def build_message(entries: list[dt.date | dict[str, Any]], today: dt.date | None = None) -> str:
     today = today or dt.date.today()
-    horizon_end = today + dt.timedelta(days=14)
 
-    scheduled_soon = []
+    scheduled_future = []
     for e in entries:
         if e.get("status") != "scheduled":
             continue
@@ -125,9 +124,12 @@ def build_message(entries: list[dt.date | dict[str, Any]], today: dt.date | None
             d = dt.date.fromisoformat(iso)
         except ValueError:
             continue
-        if today <= d <= horizon_end:
-            scheduled_soon.append((d, e))
-    scheduled_soon.sort(key=lambda x: x[0])
+        # Multi-day activities should still show until the range has fully passed.
+        span = activity_span_days(e)
+        last_day = d + dt.timedelta(days=max(span - 1, 0))
+        if last_day >= today:
+            scheduled_future.append((d, e))
+    scheduled_future.sort(key=lambda x: x[0])
 
     pending = [e for e in entries if e.get("status") in ("pending", "unassigned")]
 
@@ -135,9 +137,9 @@ def build_message(entries: list[dt.date | dict[str, Any]], today: dt.date | None
     lines.append("📅 *Activity Date Suggestions*")
     lines.append("")
 
-    if scheduled_soon:
-        lines.append("🗓️ *Scheduled next 14 days:*")
-        for d, e in scheduled_soon:
+    if scheduled_future:
+        lines.append("✅ *Upcoming — already scheduled:*")
+        for d, e in scheduled_future:
             span = activity_span_days(e)
             label, holiday = _date_range_label(d.isoformat(), span)
             name = mdv2_escape(e["name"])
@@ -145,9 +147,13 @@ def build_message(entries: list[dt.date | dict[str, Any]], today: dt.date | None
             suffix = f" \\({mdv2_escape(holiday)}\\)" if holiday else ""
             lines.append(f"• {name} — {label_md}{suffix}")
         lines.append("")
+        if pending:
+            # Visible divider between "already scheduled" and "suggestions".
+            lines.append("━━━━━━━━━━━━━━━━━━")
+            lines.append("")
 
     if pending:
-        lines.append("📝 *Pending — reply with the number to accept:*")
+        lines.append("📝 *Suggestions — reply with the number to accept:*")
         lines.append("")
 
         weather_cache: dict[str, dict[str, dict[str, Any]]] = {}

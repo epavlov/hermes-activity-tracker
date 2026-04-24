@@ -74,11 +74,13 @@ For the full weights and behavior, see [`SKILL.md`](SKILL.md) and [`scripts/anal
 ```
 📅 Activity Date Suggestions
 
-🗓️ Scheduled next 14 days:
+✅ Upcoming — already scheduled:
 • Morning Yoga — Tue, May 26
 • Nashville trip — Sat, May 23 → Mon, May 25 (Memorial Day)
 
-📝 Pending — reply with the number to accept:
+━━━━━━━━━━━━━━━━━━
+
+📝 Suggestions — reply with the number to accept:
 
 1. Learn Spanish vocabulary — Mon, Apr 27
    learning · indoor · 60-90 min · morning
