@@ -1,0 +1,13 @@
+{
+  "hours": {"start": "09:00", "end": "16:00"},
+  "weekly": {
+    "mon": "wfh",
+    "tue": "office",
+    "wed": "office",
+    "thu": "wfh",
+    "fri": "wfh",
+    "sat": "off",
+    "sun": "off"
+  },
+  "notes": "9-4 Mon-Fri. Tue/Wed in-office (commute adds overhead). Mon/Thu/Fri from home (more flexibility for early-morning / lunch slots)."
+}

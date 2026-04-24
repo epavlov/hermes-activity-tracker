@@ -1,0 +1,17 @@
+[
+  {"date": "2026-01-01", "name": "New Year's Day"},
+  {"date": "2026-01-19", "name": "Martin Luther King, Jr. Day"},
+  {"date": "2026-05-25", "name": "Memorial Day"},
+  {"date": "2026-06-19", "name": "Juneteenth"},
+  {"date": "2026-07-03", "name": "Independence Day"},
+  {"date": "2026-09-07", "name": "Labor Day"},
+  {"date": "2026-11-26", "name": "Thanksgiving Day"},
+  {"date": "2026-11-27", "name": "Day After Thanksgiving"},
+  {"date": "2026-12-24", "name": "Winter Holiday Period"},
+  {"date": "2026-12-25", "name": "Winter Holiday Period"},
+  {"date": "2026-12-28", "name": "Winter Holiday Period"},
+  {"date": "2026-12-29", "name": "Winter Holiday Period"},
+  {"date": "2026-12-30", "name": "Winter Holiday Period"},
+  {"date": "2026-12-31", "name": "Winter Holiday Break"},
+  {"date": "2027-01-01", "name": "Winter Holiday Break"}
+]
