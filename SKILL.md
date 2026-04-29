@@ -194,22 +194,11 @@ The *Upcoming* section is omitted entirely when no scheduled activity is still i
   ```
   0 7,19 * * * TELEGRAM_BOT_TOKEN=123456:ABC... TELEGRAM_CHAT_ID=12345678 cd ~/.hermes/skills/productivity/activity-tracker && python3 scripts/analyze.py && python3 scripts/notify.py
   ```
-  Or create a wrapper script:
-  ```bash
-  #!/usr/bin/env bash
-  set -euo pipefail
-  export TELEGRAM_BOT_TOKEN=$(grep '^TELEGRAM_BOT_TOKEN=' ~/.hermes/.env | head -1 | sed 's/^TELEGRAM_BOT_TOKEN=//')
-  export TELEGRAM_CHAT_ID=$(grep '^TELEGRAM_CHAT_ID=' ~/.hermes/.env | head -1 | sed 's/^TELEGRAM_CHAT_ID=//')
-  exec python3 -u /Users/admin/.hermes/skills/productivity/activity-tracker/scripts/notify.py
+  `notify.py` has a built-in fallback that reads from `~/.hermes/.env` if env vars are unset, so this is no longer needed. Just set the cron directly:
   ```
-  Save as `~/.hermes/skills/productivity/activity-tracker/scripts/notify-wrapper.sh`, `chmod +x` it, and call `./scripts/notify-wrapper.sh` from the cron.
-- **Telegram credentials not in env** — fallback: the cron session won't have `TELEGRAM_BOT_TOKEN` set. Extract the real token from `~/.hermes/.env` (line starting with `TELEGRAM_BOT_TOKEN=`). The file display may show the token as masked (e.g. `***`), but the full UTF-8 bytes are stored:
-  ```bash
-  grep '^TELEGRAM_BOT_TOKEN=' ~/.hermes/.env | head -1 | sed 's/^TELEGRAM_BOT_TOKEN=//'
+  0 7,19 * * * cd ~/.hermes/skills/productivity/activity-tracker && python3 scripts/analyze.py && python3 scripts/notify.py
   ```
-  Then pass it to the subprocess env: `{**os.environ, "TELEGRAM_BOT_TOKEN": token}`.
-- **Weather shows all zeros / empty** — wttr.in rate limit. The weather module caches to `/tmp/weather_<slug>.json` for 3h; delete the cache and retry. If still empty, `lang_ru` was probably the culprit — the script already handles missing/empty, but double-check you haven't edited it.
-- **Cron didn't fire** — verify with `cronjob action=list`. On macOS, check `Console.app` → `cron` for permission prompts. For delivery-specific failures see the `telegram-troubleshoot` skill.
+- **Cron token loading quirk**: `notify.py` loads `TELEGRAM_BOT_TOKEN` and `TELEGRAM_HOME_CHANNEL` from `~/.hermes/.env` via a fallback in `send()`. The `.env` file may display tokens as masked (`***`) in tool outputs, but the full bytes are stored. The `_load_env_token` function checks `val != "***"` (literal) so real tokens starting with a number like `8709246245:...` pass through correctly. If you edit `notify.py` and break the `startswith("TELEGRAM_BOT_TOKEN=")` check, ensure the string literal is not truncated — a common patching error leaves the quote unbalanced.
 - **`chanceofrain` parse error** — wttr.in returns strings; the parser calls `int()` on them. If you see a `ValueError`, wttr.in changed its schema — add a `try/except` around the coercion and log the offending value.
 
 ## Files

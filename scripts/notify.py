@@ -194,11 +194,40 @@ def build_message(entries: list[dt.date | dict[str, Any]], today: dt.date | None
     return "\n".join(lines)
 
 
+def _load_env_token(env_path: Path) -> str | None:
+    """Load TELEGRAM_BOT_TOKEN from the Hermes .env file as fallback."""
+    if not env_path.exists():
+        return None
+    text = env_path.read_text()
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("TELEGRAM_BOT_TOKEN="):
+            val = stripped.split("=", 1)[1].strip()
+            if val and val != "***":
+                return val
+    return None
+
+
+def _load_env_chat_id(env_path: Path) -> str | None:
+    """Load TELEGRAM_HOME_CHANNEL from the Hermes .env file as fallback."""
+    if not env_path.exists():
+        return None
+    text = env_path.read_text()
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("TELEGRAM_HOME_CHANNEL="):
+            val = stripped.split("=", 1)[1].strip()
+            if val and val != "***":
+                return val
+    return None
+
+
 def send(message: str, token: str | None = None, chat_id: str | None = None) -> dict[str, Any]:
-    token = token or os.environ.get("TELEGRAM_BOT_TOKEN")
-    chat_id = chat_id or os.environ.get("TELEGRAM_CHAT_ID")
+    env_path = Path(os.path.expanduser("~/.hermes/.env"))
+    token = token or os.environ.get("TELEGRAM_BOT_TOKEN") or _load_env_token(env_path)
+    chat_id = chat_id or os.environ.get("TELEGRAM_CHAT_ID") or os.environ.get("TELEGRAM_HOME_CHANNEL") or _load_env_chat_id(env_path)
     if not token or not chat_id:
-        raise RuntimeError("TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be set")
+        raise RuntimeError("TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be set (or TELEGRAM_HOME_CHANNEL as fallback)")
 
     payload = urllib.parse.urlencode({
         "chat_id": chat_id,
